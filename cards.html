@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Example Page</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+      .card:hover .description {
+        display: block;
+      }
+      .description {
+        display: none;
+      }
+      .card-image {
+        height: 567px;
+        width: 318px;
+        object-fit: cover;
+      }
+      .orange-text {
+        color: #f97316;
+      }
+      body {
+        font-family: 'DM Sans', sans-serif;
+      }
+      .mono {
+        font-family: 'JetBrains Mono', monospace;
+      }
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  </head>
+  <body class="bg-gray-900 p-4">
+    <div class="flex space-x-4">     
+
+      <div class="relative rounded-lg overflow-hidden card" style="width: 318px;">
+        <img src="https://cdn.midjourney.com/03ee0c0b-bcc4-4a3a-a428-935c9ca49bc2/0_3_640_N.webp" alt="A large scale expressive black and white female illustration inspired by hip hop culture and comics art using light and dark tones with giant exaggerated proportions." class="w-full card-image">
+        <div class="p-4 bg-black text-white rounded-lg absolute inset-x-2 bottom-2 description">
+          <p class="font-mono saturate-150 orange-text">Image Description</p>
+          <p class="text-sm mb-2">A large scale expressive black and white female illustration inspired by hip hop culture and comics art using light and dark tones with giant exaggerated proportions.</p>
+          <div class="flex justify-between items-center">
+            <a href="#" class="flex items-center text-sm text-white hover:text-gray-300">
+              <img src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=identicon" alt="" class="w-6 h-6 rounded-full mr-2">
+              <span><strong>MyYouth</strong></span>
+            </a>
+            ...
+          </div>
+        </div>
+      </div>
+
+      <div class="relative rounded-lg overflow-hidden card" style="width: 318px;">
+        <img src="https://cdn.midjourney.com/16b8e3cb-d0c4-46d8-b545-3671f0f6d8dc/0_0_640_N.webp" alt="tromp l'oeil 3D top view wide angle of Bugatti Type 41, the Royale, large luxury car in the city in minimalist abstract art in Basquiat style" class="w-full card-image">
+        <div class="p-4 bg-black text-white rounded-lg absolute inset-x-2 bottom-2 description">
+          <p class="font-mono saturate-150 orange-text">Image Description</p>
+          <p class="text-sm mb-2">tromp l'oeil 3D top view wide angle of Bugatti Type 41, the Royale, large luxury car in the city in minimalist abstract art in Basquiat style</p>
+          <div class="flex justify-between items-center">
+            <a href="#" class="flex items-center text-sm text-white hover:text-gray-300">
+              <img src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=identicon" alt="" class="w-6 h-6 rounded-full mr-2">
+              <span><strong>TomBarreto</strong></span>
+            </a>
+            ...
+          </div>
+        </div>
+      </div>     
+    </div>
+  </body>
+</html>

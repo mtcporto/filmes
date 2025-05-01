@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filmes e Séries</title>
+    <!-- Inclua o CSS do Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.17/dist/tailwind.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="bg-gray-200 dark">
+    <header class="bg-gray-900 text-white py-4">
+        <div class="container mx-auto text-center">
+            <h1 class="text-3xl font-bold">Filmes e Séries</h1>
+            <p class="mt-2 text-gray-300">Mostrando resultados para <span id="yearTypeLabel"></span></p>
+        </div>
+        <div class="dark-mode-container">
+            <label for="darkModeToggle">
+                <input type="checkbox" id="darkModeToggle">
+                <span class="slider">
+                    <span class="toggle-icon"><i class="fas fa-moon"></i></span>
+                </span>
+            </label>
+            <span id="darkModeLabel">Dark Mode</span>
+        </div>
+    </header>
+    
+    
+    
+    
+
+    <div class="container mx-auto p-4">
+        <div class="flex justify-center mb-4">
+            <div class="flex gap-2">
+                <button id="typeMovieBtn" class="px-4 py-2 bg-blue-500 text-white rounded">Filme</button>
+                <button id="typeSeriesBtn" class="px-4 py-2 bg-gray-500 text-white rounded">Série</button>
+            </div>
+        </div>
+
+        <div class="flex justify-center mb-4 year-navigation">
+            <button id="prevYearBtn" class="px-4 py-2 bg-gray-500 text-white rounded">Ano Anterior</button>
+            <span id="currentYearLabel" class="mx-4 text-lg font-bold"></span>
+            <button id="nextYearBtn" class="px-4 py-2 bg-gray-500 text-white rounded">Próximo Ano</button>
+        </div>
+
+        <div id="movies" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+        <script src="script.js"></script>
+    </div>
+</body>
+</html>

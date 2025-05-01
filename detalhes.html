@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Detalhes do Filme</title>
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <h1>Detalhes do Filme</h1>
+
+    <div id="movie-details"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        // Obter o ID do filme a partir da URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const movieId = urlParams.get("id");
+
+        const apiUrl = `https://www.omdbapi.com/?apikey=464b9c8f&i=${movieId}`;
+
+        const movieDetailsContainer = document.getElementById("movie-details");
+
+        axios.get(apiUrl)
+            .then(response => {
+                const movie = response.data;
+
+                const title = document.createElement("h2");
+                title.textContent = movie.Title;
+
+                const year = document.createElement("p");
+                year.textContent = "Ano: " + movie.Year;
+
+                const genre = document.createElement("p");
+                genre.textContent = "Gênero: " + movie.Genre;
+
+                const plot = document.createElement("p");
+                plot.textContent = "Sinopse: " + movie.Plot;
+
+                movieDetailsContainer.appendChild(title);
+                movieDetailsContainer.appendChild(year);
+                movieDetailsContainer.appendChild(genre);
+                movieDetailsContainer.appendChild(plot);
+            })
+            .catch(error => {
+                console.log(error);
+            });
+    </script>
+</body>
+</html>

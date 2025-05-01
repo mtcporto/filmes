@@ -1,0 +1,148 @@
+/* Style the card-synopsis p */
+.card-synopsis {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 0;
+    overflow: hidden;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    padding: 1rem;
+    transition: max-height 0.3s ease-in-out;
+}
+
+/* Show the card-synopsis p when the card is hovered */
+.card:hover .card-synopsis {
+    max-height: 100%;
+}
+
+
+/* Show the card-synopsis p when the card is hovered */
+.card:hover .card-synopsis {
+    opacity: 1;
+}
+
+
+/* Position the div within the header */
+header .dark-mode-container {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+}
+
+/* Position the label and span within the div */
+header .dark-mode-container label[for="darkModeToggle"],
+header .dark-mode-container #darkModeLabel {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 0.5rem;
+}
+
+/* Hide the default checkbox */
+#darkModeToggle {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+/* Create the slider */
+.slider {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 50px;
+    height: 24px;
+    background-color: #ccc;
+    border-radius: 34px;
+}
+
+/* Create the slider knob */
+.slider:before {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    border-radius: 50%;
+}
+
+/* Change the background color and position of the slider knob when checked */
+#darkModeToggle:checked + .slider {
+    background-color: #2196F3;
+}
+
+#darkModeToggle:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+/* Position the icon within the slider */
+.slider .toggle-icon {
+    position:absolute;top:2px;left:2px;}
+/* Change the position of the icon when checked */
+#darkModeToggle:checked + .slider .toggle-icon{left:28px;}
+
+.fa-sun {
+    color: yellow;
+}
+
+.container {
+    position:relative
+}
+.card {
+    position:relative;
+   width :300px;
+   height :450px;
+   border-radius :10px;
+   overflow:hidden
+}
+.card img{
+   object-fit :cover;
+   width :100%;
+   height :100%
+}
+.card-content{
+   position:absolute;
+   bottom :0;
+   left :0;
+   right :0;
+   padding :1rem;
+   background-color :rgba(0,0,0,0.7);
+   color:#fff
+}
+.card-synopsis{
+   margin-top :0.5rem
+}
+.card:hover .card-content{
+   animation :fade-in 0.5s
+}
+@keyframes fade-in{
+   from{
+      opacity :0
+   }
+   to{
+      opacity :1
+   }
+}
+.year-navigation{
+   display:flex;
+   justify-content:center;
+   align-items:center;
+   margin-top :1rem
+}
+.year-navigation button{
+   background-color:#999;
+   color:#fff;
+   padding :0.5rem 1rem;
+   border-radius :5px;
+   margin :0 0.5rem;
+   cursor:pointer
+}
+.year-navigation button:hover{
+   background-color:#555
+}
+.dark{
+background-color:black;color:white}
+.fa-sun{color :yellow}
