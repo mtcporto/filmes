@@ -4,51 +4,81 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Filmes e Séries</title>
-    <!-- Inclua o CSS do Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.17/dist/tailwind.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <body class="bg-gray-200 dark">
-    <header class="bg-gray-900 text-white py-4">
-        <div class="container mx-auto text-center">
-            <h1 class="text-3xl font-bold">Filmes e Séries</h1>
-            <p class="mt-2 text-gray-300">Mostrando resultados para <span id="yearTypeLabel"></span></p>
-        </div>
-        <div class="dark-mode-container">
-            <label for="darkModeToggle">
-                <input type="checkbox" id="darkModeToggle">
-                <span class="slider">
-                    <span class="toggle-icon"><i class="fas fa-moon"></i></span>
-                </span>
-            </label>
-            <span id="darkModeLabel">Dark Mode</span>
+    <!-- Modificar o header para que o texto não oculte a imagem -->
+    <header class="relative">
+        <div class="featured-backdrop absolute inset-0 bg-center bg-cover" id="featuredBackdrop"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-gray-900"></div>
+        
+        <div class="container mx-auto relative z-10 py-8 px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <h1 class="text-3xl font-bold text-white mb-4 md:mb-0">
+                    <a href="index.html" class="flex items-center">
+                        <i class="fas fa-film mr-2"></i>
+                        Filmes & Séries
+                    </a>
+                </h1>
+                
+                <div class="dark-mode-container">
+                    <button id="darkModeToggle" class="text-white text-xl p-2">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </div>
         </div>
     </header>
-    
-    
-    
-    
 
+    <!-- Conteúdo principal -->
     <div class="container mx-auto p-4">
-        <div class="flex justify-center mb-4">
-            <div class="flex gap-2">
-                <button id="typeMovieBtn" class="px-4 py-2 bg-blue-500 text-white rounded">Filme</button>
-                <button id="typeSeriesBtn" class="px-4 py-2 bg-gray-500 text-white rounded">Série</button>
+        <!-- Barra de busca -->
+        <div class="search-container bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-6">
+            <div class="relative">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="Buscar filmes, séries ou pessoas..." 
+                    class="w-full py-3 px-4 pr-12 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                <button id="searchBtn" class="absolute right-3 top-3 text-gray-500 dark:text-gray-400 hover:text-blue-500">
+                    <i class="fas fa-search text-xl"></i>
+                </button>
+            </div>
+            <div class="flex mt-3 gap-3">
+                <div class="flex items-center">
+                    <input type="radio" id="typeAll" name="contentType" value="all" checked class="mr-2">
+                    <label for="typeAll" class="text-gray-700 dark:text-gray-300">Todos</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="radio" id="typeMovie" name="contentType" value="movie" class="mr-2">
+                    <label for="typeMovie" class="text-gray-700 dark:text-gray-300">Filmes</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="radio" id="typeSeries" name="contentType" value="tv" class="mr-2">
+                    <label for="typeSeries" class="text-gray-700 dark:text-gray-300">Séries</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="radio" id="typePerson" name="contentType" value="person" class="mr-2">
+                    <label for="typePerson" class="text-gray-700 dark:text-gray-300">Pessoas</label>
+                </div>
             </div>
         </div>
 
-        <div class="flex justify-center mb-4 year-navigation">
-            <button id="prevYearBtn" class="px-4 py-2 bg-gray-500 text-white rounded">Ano Anterior</button>
-            <span id="currentYearLabel" class="mx-4 text-lg font-bold"></span>
-            <button id="nextYearBtn" class="px-4 py-2 bg-gray-500 text-white rounded">Próximo Ano</button>
-        </div>
-
-        <div id="movies" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
-
-        <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-        <script src="script.js"></script>
+        <!-- Grade de filmes/séries -->
+        <div id="movies" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
     </div>
+
+    <footer class="bg-gray-900 text-white py-4 mt-8">
+        <div class="container mx-auto text-center">
+            <p>&copy; 2025 Filmes e Séries</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

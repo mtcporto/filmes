@@ -9,20 +9,15 @@
     background-color: rgba(0, 0, 0, 0.8);
     color: #fff;
     padding: 1rem;
-    transition: max-height 0.3s ease-in-out;
+    transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+    opacity: 0;
 }
 
 /* Show the card-synopsis p when the card is hovered */
 .card:hover .card-synopsis {
     max-height: 100%;
-}
-
-
-/* Show the card-synopsis p when the card is hovered */
-.card:hover .card-synopsis {
     opacity: 1;
 }
-
 
 /* Position the div within the header */
 header .dark-mode-container {
@@ -31,12 +26,15 @@ header .dark-mode-container {
     right: 1rem;
 }
 
-/* Position the label and span within the div */
-header .dark-mode-container label[for="darkModeToggle"],
-header .dark-mode-container #darkModeLabel {
-    display: inline-block;
-    vertical-align: middle;
-    margin-right: 0.5rem;
+/* Add responsive positioning for small screens */
+@media (max-width: 640px) {
+    header .dark-mode-container {
+        position: relative;
+        margin-top: 1rem;
+        text-align: center;
+        right: auto;
+        top: auto;
+    }
 }
 
 /* Hide the default checkbox */
@@ -91,41 +89,132 @@ header .dark-mode-container #darkModeLabel {
 .container {
     position:relative
 }
+
+/* Card redesign with cleaner layout */
 .card {
-    position:relative;
-   width :300px;
-   height :450px;
-   border-radius :10px;
-   overflow:hidden
+    position: relative;
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: #fff;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
 }
-.card img{
-   object-fit :cover;
-   width :100%;
-   height :100%
+
+.dark .card {
+    background-color: #2d3748;
 }
-.card-content{
-   position:absolute;
-   bottom :0;
-   left :0;
-   right :0;
-   padding :1rem;
-   background-color :rgba(0,0,0,0.7);
-   color:#fff
+
+.card:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 15px 25px rgba(0, 0, 0, 0.15);
+    z-index: 10;
 }
-.card-synopsis{
-   margin-top :0.5rem
+
+.card:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background: linear-gradient(90deg, #3182ce, #63b3ed);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
 }
-.card:hover .card-content{
-   animation :fade-in 0.5s
+
+.card:hover:after {
+    transform: scaleX(1);
 }
-@keyframes fade-in{
-   from{
-      opacity :0
-   }
-   to{
-      opacity :1
-   }
+
+.card-image-container {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 150%; /* 2:3 aspect ratio */
+    overflow: hidden;
 }
+
+.card img.lazy {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background-color: #f0f0f0;
+    transition: opacity 0.3s;
+}
+
+.dark .card img.lazy {
+    background-color: #4a5568;
+}
+
+.card-content {
+    padding: 1rem;
+    position: relative;
+    border-top: 3px solid #3182ce;
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-details {
+    display: flex;
+    justify-content: space-between;
+    color: #718096;
+    font-size: 0.9rem;
+}
+
+.card-synopsis-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.card:hover .card-synopsis-container {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.card-synopsis {
+    padding: 1.5rem;
+    color: white;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    max-height: 100%;
+    overflow-y: auto;
+}
+
+.card-rating {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: rgba(0, 0, 0, 0.75);
+    color: #fbd38d;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: bold;
+    z-index: 5;
+}
+
 .year-navigation{
    display:flex;
    justify-content:center;
@@ -146,3 +235,389 @@ header .dark-mode-container #darkModeLabel {
 .dark{
 background-color:black;color:white}
 .fa-sun{color :yellow}
+
+/* Modern navigation controls */
+.filter-container {
+  background-color: #f8fafc;
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.dark .filter-container {
+  background-color: #2d3748;
+}
+
+.type-selector {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.type-selector button {
+  flex: 1;
+  padding: 0.75rem;
+  background: #e2e8f0;
+  border: none;
+  font-weight: 600;
+  transition: background-color 0.2s, color 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.dark .type-selector button {
+  background: #4a5568;
+}
+
+.type-selector button.active {
+  background-color: #3182ce;
+  color: white;
+}
+
+.type-selector button:first-child {
+  border-radius: 8px 0 0 8px;
+}
+
+.type-selector button:last-child {
+  border-radius: 0 8px 8px 0;
+}
+
+.year-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.year-slider-container {
+  flex: 1;
+  position: relative;
+}
+
+.year-slider {
+  width: 100%;
+  -webkit-appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: #cbd5e0;
+  outline: none;
+}
+
+.dark .year-slider {
+  background: #4a5568;
+}
+
+.year-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #3182ce;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.year-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #3182ce;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.year-display {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #3182ce;
+  min-width: 80px;
+  text-align: center;
+}
+
+.dark .year-display {
+  color: #63b3ed;
+}
+/* Adicionar suporte para aspect ratio em vídeos */
+.aspect-w-16 {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+}
+
+.aspect-w-16 iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* Cursor pointer para cards */
+.card {
+    cursor: pointer;
+}
+
+/* Efeito de pulse no ícone de info */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.card:hover .info-icon {
+    animation: pulse 1.5s infinite;
+}
+
+/* Modernizar o toggle de Dark Mode */
+.dark-mode-toggle {
+  position: relative;
+  width: 60px;
+  height: 30px;
+}
+
+.dark-mode-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.dark-mode-switch {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #f0f0f0;
+  transition: .4s;
+  border-radius: 30px;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+}
+
+.dark-mode-switch:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+input:checked + .dark-mode-switch {
+  background-color: #3182ce;
+}
+
+input:checked + .dark-mode-switch:before {
+  transform: translateX(30px);
+}
+
+.mode-icon {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+}
+
+.sun-icon {
+  left: 8px;
+  color: #ff9800;
+}
+
+.moon-icon {
+  right: 8px;
+  color: #2c3e50;
+}
+
+input:checked + .dark-mode-switch .sun-icon {
+  opacity: 0;
+}
+
+input:checked + .dark-mode-switch .moon-icon {
+  opacity: 1;
+}
+
+input:not(:checked) + .dark-mode-switch .sun-icon {
+  opacity: 1;
+}
+
+input:not(:checked) + .dark-mode-switch .moon-icon {
+  opacity: 0;
+}
+
+/* Adicionar estilos para o header com backdrop */
+.featured-backdrop {
+    height: 500px;
+    opacity: 0.8; /* Aumentar um pouco a opacidade */
+    background-position: center 20%;
+    transition: background-image 0.5s ease-in-out;
+}
+
+@media (max-width: 768px) {
+    .featured-backdrop {
+        height: 400px;
+    }
+}
+
+/* Ajustar cores do dark mode para tons mais suaves */
+:root {
+    --dark-bg: #121212;
+    --dark-surface: #1e1e1e;
+    --dark-elevated: #272727;
+    --dark-text-primary: rgba(255, 255, 255, 0.87);
+    --dark-text-secondary: rgba(255, 255, 255, 0.60);
+}
+
+body.dark {
+    background-color: var(--dark-bg);
+    color: var(--dark-text-primary);
+}
+
+.dark .card {
+    background-color: var(--dark-surface);
+}
+
+.dark .card-content {
+    border-top: 3px solid #3182ce;
+}
+
+.dark .card-title {
+    color: var(--dark-text-primary);
+}
+
+.dark .card-details {
+    color: var(--dark-text-secondary);
+}
+
+.dark .filter-container,
+.dark .search-container {
+    background-color: var(--dark-surface);
+}
+
+.dark header {
+    background-color: transparent;
+}
+
+.dark footer {
+    background-color: var(--dark-elevated);
+}
+
+/* Melhorar contraste em modo escuro */
+.dark .search-container label {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.dark input[type="radio"] + label {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.dark .search-container {
+    background-color: #1e1e1e;
+}
+
+/* Simplificar o toggle de dark mode */
+.dark-mode-container {
+    display: flex;
+    align-items: center;
+}
+
+#darkModeToggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.5rem;
+    color: white;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+#darkModeToggle:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Remover todos os estilos anteriores do dark mode toggle */
+.dark-mode-toggle,
+.dark-mode-switch,
+.mode-icon,
+.slider {
+    display: none;
+}
+
+/* Remover estilos de synopsis agora desnecessários */
+.card-synopsis-container,
+.card-synopsis {
+    display: none;
+}
+
+/* Garantir que o header tenha fundo transparente em ambos os modos */
+header {
+    background-color: transparent;
+}
+
+.dark header {
+    background-color: transparent;
+}
+
+/* Melhorar o gradiente para dar mais destaque à imagem */
+header .absolute.inset-0:nth-child(2) {
+    background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7));
+}
+
+.dark header .absolute.inset-0:nth-child(2) {
+    background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.8));
+}
+
+/* Remover classes desnecessárias */
+#featuredTitle, #featuredOverview {
+    display: none;
+}
+
+/* Estilo simples e consistente para o botão dark mode */
+.dark-mode-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#darkModeToggle {
+    background: rgba(0, 0, 0, 0.2);
+    border: none;
+    cursor: pointer;
+    font-size: 1.5rem;
+    color: white;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+#darkModeToggle:hover {
+    background-color: rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+/* Remover os estilos antigos que podem estar interferindo */
+.dark-mode-toggle,
+.dark-mode-switch,
+.mode-icon,
+.slider,
+.toggle-icon {
+    display: none;
+}
