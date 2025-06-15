@@ -621,3 +621,141 @@ header .absolute.inset-0:nth-child(2) {
 .toggle-icon {
     display: none;
 }
+
+/* Estilos para seção de provedores de streaming */
+.provider-card {
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.provider-card:hover {
+    border-color: #3182ce;
+    transform: translateY(-2px) scale(1.05);
+}
+
+.provider-logo {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    border-radius: 6px;
+}
+
+/* Efeito de pulse para as logos dos provedores */
+@keyframes provider-pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.provider-card:hover .provider-logo {
+    animation: provider-pulse 1.5s infinite;
+}
+
+/* Estilo para quando não há informações de streaming */
+.no-providers {
+    background: linear-gradient(135deg, #f6f7f8 0%, #eaeaea 100%);
+    border-left: 4px solid #ffa726;
+    padding: 16px;
+    border-radius: 8px;
+    margin: 16px 0;
+}
+
+.dark .no-providers {
+    background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+    border-left-color: #f59e0b;
+}
+
+/* Ícones de tipo de serviço */
+.service-type-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+}
+
+/* Estilos para seletor de provedores */
+.provider-btn {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: #f0f0f0;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.dark .provider-btn {
+    background-color: #374151;
+    color: #f9fafb;
+}
+
+.provider-btn:hover {
+    background-color: #e5e7eb;
+    transform: translateY(-1px);
+}
+
+.dark .provider-btn:hover {
+    background-color: #4b5563;
+}
+
+.provider-btn.active {
+    background-color: #3182ce;
+    color: white;
+    border-color: #2563eb;
+}
+
+.provider-btn.active:hover {
+    background-color: #2563eb;
+}
+
+.provider-logo {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    border-radius: 4px;
+    margin-right: 6px;
+}
+
+#providerSelector {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 1rem;
+}
+
+.dark #providerSelector {
+    border-top-color: #374151;
+}
+
+/* Badge para indicar conteúdo disponível em streaming */
+.streaming-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    z-index: 5;
+}
+
+.streaming-badge i {
+    margin-left: 1px; /* Pequeno ajuste para centralizar melhor o ícone play */
+}
+
+/* Animação para o badge de streaming */
+@keyframes streaming-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+    70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.streaming-badge {
+    animation: streaming-pulse 2s infinite;
+}

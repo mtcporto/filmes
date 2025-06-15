@@ -40,9 +40,34 @@ document.addEventListener('DOMContentLoaded', function() {
     typeRadios.forEach(radio => {
         radio.addEventListener('change', function() {
             currentContentType = this.value;
+            
+            // Mostrar/esconder seletor de provedores
+            const providerSelector = document.getElementById('providerSelector');
+            if (this.value === 'streaming') {
+                providerSelector.classList.remove('hidden');
+            } else {
+                providerSelector.classList.add('hidden');
+            }
+            
             if (searchInput && searchInput.value.trim() !== '') {
                 performSearch();
             } else {
+                fetchTrending(currentContentType);
+            }
+        });
+    });
+    
+    // Configure botões de provedores
+    const providerButtons = document.querySelectorAll('.provider-btn');
+    providerButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Remove active de todos os botões
+            providerButtons.forEach(btn => btn.classList.remove('active'));
+            // Adiciona active ao botão clicado
+            this.classList.add('active');
+            
+            // Se estamos no modo streaming, refaça a busca
+            if (currentContentType === 'streaming') {
                 fetchTrending(currentContentType);
             }
         });
@@ -70,6 +95,12 @@ function performSearch() {
     
     const contentType = getSelectedContentType();
     
+    // Para modo streaming, usar busca específica
+    if (contentType === 'streaming') {
+        performStreamingSearch(searchTerm);
+        return;
+    }
+    
     // Mostrar estado de carregamento
     if (moviesContainer) {
         moviesContainer.innerHTML = '<div class="flex justify-center items-center h-64 w-full"><div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div></div>';
@@ -87,7 +118,9 @@ function performSearch() {
     axios.get(searchUrl)
         .then(response => {
             if (response.data.results && response.data.results.length > 0) {
-                renderSearchResults(response.data.results, contentType);
+                // Ordenar resultados de busca por popularidade e data
+                const sortedResults = sortSearchResults(response.data.results, contentType);
+                renderSearchResults(sortedResults, contentType);
             } else {
                 moviesContainer.innerHTML = '<div class="text-center p-8">Nenhum resultado encontrado. Tente outra busca.</div>';
             }
@@ -104,22 +137,34 @@ function fetchTrending(contentType = 'all') {
         moviesContainer.innerHTML = '<div class="flex justify-center items-center h-64 w-full"><div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div></div>';
     }
     
-    let endpoint;
-    
-    if (contentType === 'all') {
-        endpoint = 'trending/all/week';
-    } else if (contentType === 'person') {
-        endpoint = 'person/popular';
-    } else {
-        endpoint = `${contentType}/popular`;
+    if (contentType === 'streaming') {
+        fetchStreamingContent();
+        return;
     }
     
-    const apiUrl = `${TMDB_API_BASE_URL}/${endpoint}?api_key=${TMDB_API_KEY}&language=pt-BR`;
+    let apiUrl;
+    
+    if (contentType === 'all') {
+        // Para "todos", usar trending que mistura filmes, séries e pessoas por popularidade
+        apiUrl = `${TMDB_API_BASE_URL}/trending/all/week?api_key=${TMDB_API_KEY}&language=pt-BR`;
+    } else if (contentType === 'person') {
+        // Para pessoas, usar popular
+        apiUrl = `${TMDB_API_BASE_URL}/person/popular?api_key=${TMDB_API_KEY}&language=pt-BR`;
+    } else {
+        // Para filmes e séries, usar discover com ordenação por mais recentes e populares
+        const currentYear = new Date().getFullYear();
+        const lastYear = currentYear - 1;
+        
+        // Buscar por lançamentos recentes (últimos 2 anos) ordenados por popularidade
+        apiUrl = `${TMDB_API_BASE_URL}/discover/${contentType}?api_key=${TMDB_API_KEY}&language=pt-BR&sort_by=popularity.desc&primary_release_date.gte=${lastYear}-01-01&first_air_date.gte=${lastYear}-01-01`;
+    }
     
     axios.get(apiUrl)
         .then(response => {
             if (response.data.results && response.data.results.length > 0) {
-                renderSearchResults(response.data.results, contentType);
+                // Ordenar resultados por data de lançamento (mais recentes primeiro) e depois por popularidade
+                const sortedResults = sortResultsByRecentAndPopular(response.data.results, contentType);
+                renderSearchResults(sortedResults, contentType);
             } else {
                 moviesContainer.innerHTML = '<div class="text-center p-8">Nenhum resultado encontrado.</div>';
             }
@@ -143,7 +188,10 @@ function renderSearchResults(results, contentType) {
         const itemType = item.media_type || contentType;
         
         if (itemType === 'person') {
-            createPersonCard(item);
+            // Filtrar pessoas sem foto
+            if (item.profile_path) {
+                createPersonCard(item);
+            }
         } else {
             createMovieOrShowCard(item, itemType);
         }
@@ -605,97 +653,105 @@ document.addEventListener('DOMContentLoaded', function() {
     loadFeaturedBackdrop();
 });
 
-function getSelectedContentType() {
-    return document.querySelector('input[name="contentType"]:checked').value;
+function getSelectedProvider() {
+    const activeBtn = document.querySelector('.provider-btn.active');
+    return activeBtn ? activeBtn.dataset.provider : 'all';
 }
 
-function performSearch() {
-    const searchTerm = document.getElementById('searchInput').value.trim();
-    if (!searchTerm) {
+function fetchStreamingContent() {
+    const selectedProvider = getSelectedProvider();
+    
+    // Buscar filmes e séries populares para depois filtrar por provedores
+    const promises = [
+        axios.get(`${TMDB_API_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&language=pt-BR&sort_by=popularity.desc&with_watch_providers=${selectedProvider === 'all' ? '' : selectedProvider}&watch_region=BR`),
+        axios.get(`${TMDB_API_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&language=pt-BR&sort_by=popularity.desc&with_watch_providers=${selectedProvider === 'all' ? '' : selectedProvider}&watch_region=BR`)
+    ];
+    
+    Promise.all(promises)
+        .then(responses => {
+            const movieResults = responses[0].data.results || [];
+            const tvResults = responses[1].data.results || [];
+            
+            // Combinar resultados de filmes e séries
+            const combinedResults = [
+                ...movieResults.map(item => ({...item, media_type: 'movie'})),
+                ...tvResults.map(item => ({...item, media_type: 'tv'}))
+            ];
+            
+            if (combinedResults.length > 0) {
+                // Se um provedor específico está selecionado, fazer uma verificação adicional
+                if (selectedProvider !== 'all') {
+                    filterByProviderAvailability(combinedResults, selectedProvider);
+                } else {
+                    renderStreamingResults(combinedResults);
+                }
+            } else {
+                moviesContainer.innerHTML = '<div class="text-center p-8">Nenhum conteúdo encontrado para este provedor no Brasil.</div>';
+            }
+        })
+        .catch(error => {
+            moviesContainer.innerHTML = '<div class="text-center p-8 text-red-500">Erro ao buscar conteúdo de streaming. Por favor tente novamente.</div>';
+            console.log(error);
+        });
+}
+
+function filterByProviderAvailability(results, providerId) {
+    // Esta função fará uma verificação adicional para garantir que o conteúdo está realmente disponível
+    const batchSize = 20; // Processar em lotes para não sobrecarregar a API
+    const firstBatch = results.slice(0, batchSize);
+    
+    const providerChecks = firstBatch.map(item => {
+        const type = item.media_type === 'movie' ? 'movie' : 'tv';
+        return axios.get(`${TMDB_API_BASE_URL}/${type}/${item.id}/watch/providers?api_key=${TMDB_API_KEY}`)
+            .then(response => {
+                const brazilProviders = response.data.results?.BR;
+                if (brazilProviders) {
+                    const hasProvider = 
+                        (brazilProviders.flatrate && brazilProviders.flatrate.some(p => p.provider_id == providerId)) ||
+                        (brazilProviders.rent && brazilProviders.rent.some(p => p.provider_id == providerId)) ||
+                        (brazilProviders.buy && brazilProviders.buy.some(p => p.provider_id == providerId));
+                    
+                    return hasProvider ? item : null;
+                }
+                return null;
+            })
+            .catch(() => null);
+    });
+    
+    Promise.all(providerChecks)
+        .then(checkedResults => {
+            const availableContent = checkedResults.filter(item => item !== null);
+            renderStreamingResults(availableContent);
+        })
+        .catch(error => {
+            console.log('Error checking provider availability:', error);
+            // Fallback: mostrar todos os resultados
+            renderStreamingResults(firstBatch);
+        });
+}
+
+function renderStreamingResults(results) {
+    moviesContainer.innerHTML = "";
+    
+    if (results.length === 0) {
+        moviesContainer.innerHTML = '<div class="text-center p-8">Nenhum conteúdo disponível para este provedor no momento.</div>';
         return;
     }
     
-    const contentType = getSelectedContentType();
+    // Ordenar por popularidade
+    const sortedResults = results.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
     
-    // Show loading state
-    moviesContainer.innerHTML = '<div class="flex justify-center items-center h-64 w-full"><div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div></div>';
-    
-    // Different endpoints depending on content type
-    let searchUrl;
-    
-    if (contentType === 'all') {
-        searchUrl = `${TMDB_API_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(searchTerm)}&language=pt-BR`;
-    } else {
-        searchUrl = `${TMDB_API_BASE_URL}/search/${contentType}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(searchTerm)}&language=pt-BR`;
-    }
-    
-    axios.get(searchUrl)
-        .then(response => {
-            if (response.data.results && response.data.results.length > 0) {
-                renderSearchResults(response.data.results, contentType);
-            } else {
-                moviesContainer.innerHTML = '<div class="text-center p-8">Nenhum resultado encontrado. Tente outra busca.</div>';
-            }
-        })
-        .catch(error => {
-            moviesContainer.innerHTML = '<div class="text-center p-8 text-red-500">Erro ao buscar dados. Por favor tente novamente.</div>';
-            console.log(error);
-        });
-}
-
-function fetchTrending(contentType = 'all') {
-    // Show loading state
-    moviesContainer.innerHTML = '<div class="flex justify-center items-center h-64 w-full"><div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div></div>';
-    
-    let endpoint;
-    
-    if (contentType === 'all') {
-        endpoint = 'trending/all/week';
-    } else if (contentType === 'person') {
-        endpoint = 'person/popular';
-    } else {
-        endpoint = `${contentType}/popular`;
-    }
-    
-    const apiUrl = `${TMDB_API_BASE_URL}/${endpoint}?api_key=${TMDB_API_KEY}&language=pt-BR`;
-    
-    axios.get(apiUrl)
-        .then(response => {
-            if (response.data.results && response.data.results.length > 0) {
-                renderSearchResults(response.data.results, contentType);
-            } else {
-                moviesContainer.innerHTML = '<div class="text-center p-8">Nenhum resultado encontrado.</div>';
-            }
-        })
-        .catch(error => {
-            moviesContainer.innerHTML = '<div class="text-center p-8 text-red-500">Erro ao carregar dados. Por favor tente novamente.</div>';
-            console.log(error);
-        });
-}
-
-function renderSearchResults(results, contentType) {
-    moviesContainer.innerHTML = "";
-    
-    results.forEach(item => {
-        // Skip person results if we're not specifically searching for people
-        if (item.media_type === 'person' && contentType !== 'person') {
-            return;
-        }
-        
-        // For multi search, we need to determine the media type
-        const itemType = item.media_type || contentType;
-        
-        if (itemType === 'person') {
-            createPersonCard(item);
-        } else {
-            createMovieOrShowCard(item, itemType);
+    sortedResults.forEach(item => {
+        const itemType = item.media_type;
+        if (itemType === 'movie' || itemType === 'tv') {
+            createStreamingCard(item, itemType);
         }
     });
     
     setupLazyLoading();
 }
 
-function createMovieOrShowCard(item, itemType) {
+function createStreamingCard(item, itemType) {
     const card = document.createElement("div");
     card.classList.add("card");
     
@@ -731,6 +787,13 @@ function createMovieOrShowCard(item, itemType) {
         imageContainer.appendChild(rating);
     }
     
+    // Badge indicando que está disponível para streaming
+    const streamingBadge = document.createElement("div");
+    streamingBadge.classList.add("streaming-badge");
+    streamingBadge.innerHTML = '<i class="fas fa-play"></i>';
+    streamingBadge.title = 'Disponível para streaming';
+    imageContainer.appendChild(streamingBadge);
+    
     imageContainer.appendChild(image);
     
     // Card content below the image
@@ -740,13 +803,12 @@ function createMovieOrShowCard(item, itemType) {
     const titleElem = document.createElement("h3");
     titleElem.classList.add("card-title");
     titleElem.textContent = title;
-    titleElem.title = title; // Add tooltip on hover
+    titleElem.title = title;
     
     const detailsContainer = document.createElement("div");
     detailsContainer.classList.add("card-details");
     
     const yearText = document.createElement("span");
-    // Date format is different for movies vs TV
     const releaseDate = itemType === 'movie' ? item.release_date : item.first_air_date;
     yearText.textContent = releaseDate ? releaseDate.substring(0, 4) : 'N/A';
     
@@ -772,102 +834,156 @@ function createMovieOrShowCard(item, itemType) {
     moviesContainer.appendChild(card);
 }
 
-function createPersonCard(person) {
-    const card = document.createElement("div");
-    card.classList.add("card");
-    
-    // Image container
-    const imageContainer = document.createElement("div");
-    imageContainer.classList.add("card-image-container");
-    
-    // Image with lazy loading
-    const image = document.createElement("img");
-    image.alt = person.name;
-    image.classList.add("lazy");
-    
-    if (person.profile_path) {
-        image.dataset.src = `${TMDB_IMAGE_BASE_URL}${person.profile_path}`;
-    } else {
-        image.dataset.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450' viewBox='0 0 300 450'%3E%3Crect width='300' height='450' fill='%23e2e8f0'/%3E%3Ccircle cx='150' cy='150' r='70' fill='%23a0aec0'/%3E%3Ccircle cx='150' cy='280' r='120' fill='%23a0aec0'/%3E%3C/svg%3E";
+// Função para ordenar resultados por data de lançamento e popularidade
+function sortResultsByRecentAndPopular(results, contentType) {
+    if (contentType === 'person') {
+        // Para pessoas, filtrar quem não tem foto e ordenar por popularidade
+        return results
+            .filter(person => person.profile_path) // Filtrar apenas pessoas com foto
+            .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
     }
     
-    image.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 450'%3E%3C/svg%3E";
-    
-    // Error handling
-    image.onerror = function() {
-        this.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450' viewBox='0 0 300 450'%3E%3Crect width='300' height='450' fill='%23e2e8f0'/%3E%3Ccircle cx='150' cy='150' r='70' fill='%23a0aec0'/%3E%3Ccircle cx='150' cy='280' r='120' fill='%23a0aec0'/%3E%3C/svg%3E";
-        this.onerror = null;
-    };
-    
-    imageContainer.appendChild(image);
-    
-    // Card content below the image
-    const content = document.createElement("div");
-    content.classList.add("card-content");
-    
-    const titleElem = document.createElement("h3");
-    titleElem.classList.add("card-title");
-    titleElem.textContent = person.name;
-    titleElem.title = person.name; // Add tooltip on hover
-    
-    const detailsContainer = document.createElement("div");
-    detailsContainer.classList.add("card-details");
-    
-    const knownFor = document.createElement("span");
-    knownFor.textContent = person.known_for_department || "Atuação";
-    
-    const personType = document.createElement("span");
-    personType.textContent = "Pessoa";
-    
-    detailsContainer.appendChild(knownFor);
-    detailsContainer.appendChild(personType);
-    
-    content.appendChild(titleElem);
-    content.appendChild(detailsContainer);
-    
-    // Assemble the card
-    card.appendChild(imageContainer);
-    card.appendChild(content);
-    
-    // Add click handler to navigate to details page
-    card.addEventListener("click", () => {
-        window.location.href = `pessoa.html?id=${person.id}`;
+    // Para filmes e séries, ordenar por data de lançamento (mais recentes primeiro) e depois por popularidade
+    return results.sort((a, b) => {
+        // Obter datas de lançamento
+        const dateA = a.release_date || a.first_air_date || '0000-00-00';
+        const dateB = b.release_date || b.first_air_date || '0000-00-00';
+        
+        // Se as datas são diferentes, ordenar por data (mais recente primeiro)
+        if (dateA !== dateB) {
+            return dateB.localeCompare(dateA);
+        }
+        
+        // Se as datas são iguais, ordenar por popularidade
+        return (b.popularity || 0) - (a.popularity || 0);
     });
-    
-    // Add card to container
-    moviesContainer.appendChild(card);
 }
 
-// Adicionar código para carregar imagens de destaque para o header
-
-function loadFeaturedBackdrop() {
-    // Get a random popular movie for the backdrop
-    const apiUrl = `${TMDB_API_BASE_URL}/movie/popular?api_key=${TMDB_API_KEY}&language=pt-BR`;
+// Função para ordenar resultados de busca por popularidade e data
+function sortSearchResults(results, contentType) {
+    if (contentType === 'person') {
+        // Para pessoas, filtrar quem não tem foto e ordenar por popularidade
+        return results
+            .filter(person => person.profile_path) // Filtrar apenas pessoas com foto
+            .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+    }
     
-    axios.get(apiUrl)
-        .then(response => {
-            if (response.data.results && response.data.results.length > 0) {
-                // Get a random movie from top 10
-                const randomIndex = Math.floor(Math.random() * Math.min(10, response.data.results.length));
-                const movie = response.data.results[randomIndex];
-                
-                // Update backdrop
-                if (movie.backdrop_path) {
-                    const backdropElem = document.getElementById('featuredBackdrop');
-                    const backdropUrl = `https://image.tmdb.org/t/p/original${movie.backdrop_path}`;
-                    backdropElem.style.backgroundImage = `url('${backdropUrl}')`;
-                }
-                
-                // Não precisamos mais atualizar título e sinopse já que foram removidos
+    // Para busca de filmes e séries, priorizar popularidade e depois data
+    return results.sort((a, b) => {
+        // Primeiro critério: popularidade (mais populares primeiro)
+        const popularityDiff = (b.popularity || 0) - (a.popularity || 0);
+        if (Math.abs(popularityDiff) > 10) { // Se diferença significativa de popularidade
+            return popularityDiff;
+        }
+        
+        // Segundo critério: data de lançamento (mais recentes primeiro)
+        const dateA = a.release_date || a.first_air_date || '0000-00-00';
+        const dateB = b.release_date || b.first_air_date || '0000-00-00';
+        return dateB.localeCompare(dateA);
+    });
+}
+
+function performStreamingSearch(searchTerm) {
+    // Mostrar estado de carregamento
+    if (moviesContainer) {
+        moviesContainer.innerHTML = '<div class="flex justify-center items-center h-64 w-full"><div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div></div>';
+    }
+    
+    const selectedProvider = getSelectedProvider();
+    
+    // Buscar filmes e séries que contenham o termo
+    const promises = [
+        axios.get(`${TMDB_API_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(searchTerm)}&language=pt-BR`),
+        axios.get(`${TMDB_API_BASE_URL}/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(searchTerm)}&language=pt-BR`)
+    ];
+    
+    Promise.all(promises)
+        .then(responses => {
+            const movieResults = responses[0].data.results || [];
+            const tvResults = responses[1].data.results || [];
+            
+            // Combinar resultados de filmes e séries
+            const combinedResults = [
+                ...movieResults.map(item => ({...item, media_type: 'movie'})),
+                ...tvResults.map(item => ({...item, media_type: 'tv'}))
+            ];
+            
+            if (combinedResults.length > 0) {
+                // Filtrar apenas conteúdo que está disponível em streaming
+                filterStreamingAvailability(combinedResults, selectedProvider, searchTerm);
+            } else {
+                moviesContainer.innerHTML = '<div class="text-center p-8">Nenhum resultado encontrado para esta busca.</div>';
             }
         })
         .catch(error => {
-            console.log('Error loading featured backdrop:', error);
+            moviesContainer.innerHTML = '<div class="text-center p-8 text-red-500">Erro ao buscar conteúdo. Por favor tente novamente.</div>';
+            console.log(error);
         });
 }
 
-// Call this function when the page loads
-document.addEventListener('DOMContentLoaded', function() {
-    loadFeaturedBackdrop();
-    // ... other init code
-});
+function filterStreamingAvailability(results, providerId, searchTerm) {
+    // Verificar disponibilidade de streaming para os primeiros 15 resultados
+    const batchSize = 15;
+    const batch = results.slice(0, batchSize);
+    
+    const availabilityChecks = batch.map(item => {
+        const type = item.media_type === 'movie' ? 'movie' : 'tv';
+        return axios.get(`${TMDB_API_BASE_URL}/${type}/${item.id}/watch/providers?api_key=${TMDB_API_KEY}`)
+            .then(response => {
+                const brazilProviders = response.data.results?.BR;
+                if (brazilProviders) {
+                    // Verificar se há algum provedor disponível
+                    const hasAnyProvider = 
+                        (brazilProviders.flatrate && brazilProviders.flatrate.length > 0) ||
+                        (brazilProviders.rent && brazilProviders.rent.length > 0) ||
+                        (brazilProviders.buy && brazilProviders.buy.length > 0);
+                    
+                    if (hasAnyProvider) {
+                        // Se um provedor específico foi selecionado, verificar se está disponível
+                        if (providerId !== 'all') {
+                            const hasSpecificProvider = 
+                                (brazilProviders.flatrate && brazilProviders.flatrate.some(p => p.provider_id == providerId)) ||
+                                (brazilProviders.rent && brazilProviders.rent.some(p => p.provider_id == providerId)) ||
+                                (brazilProviders.buy && brazilProviders.buy.some(p => p.provider_id == providerId));
+                            
+                            return hasSpecificProvider ? item : null;
+                        }
+                        return item;
+                    }
+                }
+                return null;
+            })
+            .catch(() => null);
+    });
+    
+    Promise.all(availabilityChecks)
+        .then(checkedResults => {
+            const availableContent = checkedResults.filter(item => item !== null);
+            
+            if (availableContent.length > 0) {
+                renderStreamingResults(availableContent);
+            } else {
+                const providerName = getProviderName(providerId);
+                const message = providerId === 'all' 
+                    ? `Nenhum resultado para "${searchTerm}" foi encontrado em serviços de streaming no Brasil.`
+                    : `Nenhum resultado para "${searchTerm}" foi encontrado no ${providerName}.`;
+                moviesContainer.innerHTML = `<div class="text-center p-8">${message}</div>`;
+            }
+        })
+        .catch(error => {
+            console.log('Error checking streaming availability:', error);
+            moviesContainer.innerHTML = '<div class="text-center p-8 text-red-500">Erro ao verificar disponibilidade de streaming.</div>';
+        });
+}
+
+function getProviderName(providerId) {
+    const providerNames = {
+        '8': 'Netflix',
+        '337': 'Disney+',
+        '119': 'Amazon Prime Video',
+        '384': 'HBO Max',
+        '307': 'Globoplay',
+        'all': 'Todos os provedores'
+    };
+    return providerNames[providerId] || 'Provedor selecionado';
+}

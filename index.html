@@ -48,7 +48,7 @@
                     <i class="fas fa-search text-xl"></i>
                 </button>
             </div>
-            <div class="flex mt-3 gap-3">
+            <div class="flex mt-3 gap-3 flex-wrap">
                 <div class="flex items-center">
                     <input type="radio" id="typeAll" name="contentType" value="all" checked class="mr-2">
                     <label for="typeAll" class="text-gray-700 dark:text-gray-300">Todos</label>
@@ -64,6 +64,40 @@
                 <div class="flex items-center">
                     <input type="radio" id="typePerson" name="contentType" value="person" class="mr-2">
                     <label for="typePerson" class="text-gray-700 dark:text-gray-300">Pessoas</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="radio" id="typeStreaming" name="contentType" value="streaming" class="mr-2">
+                    <label for="typeStreaming" class="text-gray-700 dark:text-gray-300">Disponível Agora</label>
+                </div>
+            </div>
+            
+            <!-- Seletor de Provedores - aparece apenas quando "Disponível Agora" está selecionado -->
+            <div id="providerSelector" class="mt-4 hidden">
+                <h3 class="text-sm font-semibold mb-2 text-gray-700 dark:text-gray-300">Selecionar Provedor:</h3>
+                <div class="flex flex-wrap gap-2">
+                    <button class="provider-btn active" data-provider="all">
+                        <span>Todos</span>
+                    </button>
+                    <button class="provider-btn" data-provider="8">
+                        <img src="https://image.tmdb.org/t/p/w92/9A1JSVmSxsyaBK4SUFsYVqbAYfW.jpg" alt="Netflix" class="provider-logo">
+                        <span>Netflix</span>
+                    </button>
+                    <button class="provider-btn" data-provider="337">
+                        <img src="https://image.tmdb.org/t/p/w92/68MNrwlkpF7WnmNPXLah69CR5cb.jpg" alt="Disney Plus" class="provider-logo">
+                        <span>Disney+</span>
+                    </button>
+                    <button class="provider-btn" data-provider="119">
+                        <img src="https://image.tmdb.org/t/p/w92/peURlLlr8jggOwK53fJ5wdQl05y.jpg" alt="Amazon Prime" class="provider-logo">
+                        <span>Prime Video</span>
+                    </button>
+                    <button class="provider-btn" data-provider="384">
+                        <img src="https://image.tmdb.org/t/p/w92/zxrVdFjIjLqkfnwyghnfywTn3Lh.jpg" alt="HBO Max" class="provider-logo">
+                        <span>HBO Max</span>
+                    </button>
+                    <button class="provider-btn" data-provider="307">
+                        <img src="https://image.tmdb.org/t/p/w92/6uhKBfmtzFqOcLousHwZuzcrScK.jpg" alt="Globoplay" class="provider-logo">
+                        <span>Globoplay</span>
+                    </button>
                 </div>
             </div>
         </div>

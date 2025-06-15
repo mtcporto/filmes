@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function fetchMovieDetails(id, type) {
-    const apiUrl = `${TMDB_API_BASE_URL}/${type}/${id}?api_key=${TMDB_API_KEY}&append_to_response=credits,videos&language=pt-BR`;
+    const apiUrl = `${TMDB_API_BASE_URL}/${type}/${id}?api_key=${TMDB_API_KEY}&append_to_response=credits,videos,watch/providers&language=pt-BR`;
     
     // Show loading state
     document.getElementById('movie-details').innerHTML = 
@@ -52,6 +52,9 @@ function displayMovieDetails(movie, type) {
     // Format date to Brazilian format
     const formattedDate = releaseDate ? 
         new Date(releaseDate).toLocaleDateString('pt-BR') : 'Data desconhecida';
+    
+    // Preparar informações dos provedores de streaming
+    const streamingProviders = prepareStreamingProviders(movie['watch/providers']);
     
     // Create HTML content using Tailwind
     const detailsHTML = `
@@ -100,6 +103,14 @@ function displayMovieDetails(movie, type) {
                                 </span>
                             `).join('')}
                         </div>
+                    </div>
+                    ` : ''}
+                    
+                    <!-- Seção de Onde Assistir -->
+                    ${streamingProviders ? `
+                    <div class="mb-6">
+                        <h2 class="text-xl font-bold mb-3 text-gray-900 dark:text-white">Onde Assistir</h2>
+                        ${streamingProviders}
                     </div>
                     ` : ''}
                     
@@ -155,6 +166,234 @@ function displayMovieDetails(movie, type) {
     `;
     
     document.getElementById('movie-details').innerHTML = detailsHTML;
+}
+
+function prepareStreamingProviders(watchProviders) {
+    if (!watchProviders || !watchProviders.results || !watchProviders.results.BR) {
+        return '<p class="text-gray-600 dark:text-gray-400">Informações de disponibilidade não encontradas para o Brasil.</p>';
+    }
+    
+    const brazilData = watchProviders.results.BR;
+    const providers = [];
+    
+    // Mapear provedores para seus sites oficiais
+    const providerUrls = {
+        'Netflix': 'https://www.netflix.com/br',
+        'Amazon Prime Video': 'https://www.primevideo.com',
+        'Disney Plus': 'https://www.disneyplus.com/pt-br',
+        'HBO Max': 'https://www.hbomax.com/br/pt',
+        'Apple TV': 'https://tv.apple.com/br',
+        'Paramount Plus': 'https://www.paramountplus.com/br',
+        'Globoplay': 'https://globoplay.globo.com',
+        'Telecine': 'https://telecineplay.com.br',
+        'NOW': 'https://www.nowonline.com.br',
+        'Looke': 'https://www.looke.com.br',
+        'Pluto TV': 'https://pluto.tv/br',
+        'Crunchyroll': 'https://www.crunchyroll.com/pt-br',
+        'YouTube': 'https://www.youtube.com',
+        'Google Play Movies': 'https://play.google.com/store/movies',
+        'Microsoft Store': 'https://www.microsoft.com/pt-br/store/movies-and-tv',
+        'Rakuten TV': 'https://rakuten.tv/br',
+        'Claro Video': 'https://www.clarovideo.com/brasil'
+    };
+    
+    // Adicionar informações de preço quando disponível
+    const providerPricing = {
+        'Netflix': 'A partir de R$ 18,90/mês',
+        'Amazon Prime Video': 'A partir de R$ 9,90/mês',
+        'Disney Plus': 'A partir de R$ 13,90/mês',
+        'HBO Max': 'A partir de R$ 19,90/mês',
+        'Globoplay': 'A partir de R$ 13,90/mês'
+    };
+    
+    // Coletar todos os tipos de provedores (streaming, aluguel, compra)
+    if (brazilData.flatrate) {
+        providers.push({
+            type: 'Streaming',
+            icon: 'fas fa-play-circle',
+            color: 'text-green-600',
+            providers: brazilData.flatrate
+        });
+    }
+    
+    if (brazilData.rent) {
+        providers.push({
+            type: 'Aluguel',
+            icon: 'fas fa-credit-card',
+            color: 'text-blue-600',
+            providers: brazilData.rent
+        });
+    }
+    
+    if (brazilData.buy) {
+        providers.push({
+            type: 'Compra',
+            icon: 'fas fa-shopping-cart',
+            color: 'text-purple-600',
+            providers: brazilData.buy
+        });
+    }
+    
+    if (providers.length === 0) {
+        return '<p class="text-gray-600 dark:text-gray-400">Não disponível em serviços de streaming no Brasil no momento.</p>';
+    }
+    
+    let html = '';
+    
+    providers.forEach(providerGroup => {
+        html += `
+            <div class="mb-4">
+                <h3 class="text-lg font-semibold mb-2 ${providerGroup.color} dark:text-gray-200 flex items-center">
+                    <i class="${providerGroup.icon} mr-2"></i>
+                    ${providerGroup.type}
+                </h3>
+                <div class="flex flex-wrap gap-3">
+                    ${providerGroup.providers.map(provider => {
+                        const logoUrl = `https://image.tmdb.org/t/p/w92${provider.logo_path}`;
+                        const providerUrl = providerUrls[provider.provider_name] || '#';
+                        const pricingInfo = providerPricing[provider.provider_name] ? `<span class="text-xs text-gray-500 dark:text-gray-400">${providerPricing[provider.provider_name]}</span>` : '';
+                        
+                        return `
+                            <a href="${providerUrl}" 
+                               target="_blank" 
+                               rel="noopener noreferrer"
+                               class="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-3 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-1"
+                               title="Assistir em ${provider.provider_name}">
+                                <img src="${logoUrl}" 
+                                     alt="${provider.provider_name}" 
+                                     class="w-8 h-8 rounded-md mr-2"
+                                     onerror="this.style.display='none'">
+                                <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                                    ${provider.provider_name}
+                                </span>
+                                ${pricingInfo}
+                            </a>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    });
+    
+    return html;
+}
+
+// Adicionar função para buscar provedores alternativos se não houver dados para o Brasil
+function getAlternativeProviders(watchProviders) {
+    // Se não há dados para o Brasil, tentar outros países da América Latina
+    const alternativeCountries = ['US', 'MX', 'AR', 'CO'];
+    
+    for (const country of alternativeCountries) {
+        if (watchProviders.results[country]) {
+            return `
+                <div class="bg-yellow-50 dark:bg-yellow-900 border-l-4 border-yellow-400 p-4 rounded mb-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-info-circle text-yellow-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-700 dark:text-yellow-200">
+                                Não encontramos informações para o Brasil. Provedores disponíveis em outros países:
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                ${prepareStreamingProvidersForCountry(watchProviders.results[country])}
+            `;
+        }
+    }
+    
+    return '<p class="text-gray-600 dark:text-gray-400">Informações de disponibilidade não encontradas.</p>';
+}
+
+function prepareStreamingProvidersForCountry(countryData) {
+    // Implementação similar à prepareStreamingProviders mas para outros países
+    const providers = [];
+    
+    // Mapear provedores para seus sites oficiais
+    const providerUrls = {
+        'Netflix': 'https://www.netflix.com',
+        'Amazon Prime Video': 'https://www.primevideo.com',
+        'Disney Plus': 'https://www.disneyplus.com',
+        'HBO Max': 'https://www.hbomax.com',
+        'Apple TV': 'https://tv.apple.com',
+        'Paramount Plus': 'https://www.paramountplus.com',
+        'Globoplay': 'https://globoplay.globo.com',
+        'Telecine': 'https://telecineplay.com.br',
+        'NOW': 'https://www.nowonline.com.br',
+        'Looke': 'https://www.looke.com.br',
+        'Pluto TV': 'https://pluto.tv',
+        'Crunchyroll': 'https://www.crunchyroll.com'
+    };
+    
+    // Coletar todos os tipos de provedores (streaming, aluguel, compra)
+    if (countryData.flatrate) {
+        providers.push({
+            type: 'Streaming',
+            icon: 'fas fa-play-circle',
+            color: 'text-green-600',
+            providers: countryData.flatrate
+        });
+    }
+    
+    if (countryData.rent) {
+        providers.push({
+            type: 'Aluguel',
+            icon: 'fas fa-credit-card',
+            color: 'text-blue-600',
+            providers: countryData.rent
+        });
+    }
+    
+    if (countryData.buy) {
+        providers.push({
+            type: 'Compra',
+            icon: 'fas fa-shopping-cart',
+            color: 'text-purple-600',
+            providers: countryData.buy
+        });
+    }
+    
+    if (providers.length === 0) {
+        return '<p class="text-gray-600 dark:text-gray-400">Não disponível em serviços de streaming no momento.</p>';
+    }
+    
+    let html = '';
+    
+    providers.forEach(providerGroup => {
+        html += `
+            <div class="mb-4">
+                <h3 class="text-lg font-semibold mb-2 ${providerGroup.color} dark:text-gray-200 flex items-center">
+                    <i class="${providerGroup.icon} mr-2"></i>
+                    ${providerGroup.type}
+                </h3>
+                <div class="flex flex-wrap gap-3">
+                    ${providerGroup.providers.map(provider => {
+                        const logoUrl = `https://image.tmdb.org/t/p/w92${provider.logo_path}`;
+                        const providerUrl = providerUrls[provider.provider_name] || '#';
+                        
+                        return `
+                            <a href="${providerUrl}" 
+                               target="_blank" 
+                               rel="noopener noreferrer"
+                               class="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-3 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-1"
+                               title="Assistir em ${provider.provider_name}">
+                                <img src="${logoUrl}" 
+                                     alt="${provider.provider_name}" 
+                                     class="w-8 h-8 rounded-md mr-2"
+                                     onerror="this.style.display='none'">
+                                <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                                    ${provider.provider_name}
+                                </span>
+                            </a>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    });
+    
+    return html;
 }
 
 function initDarkModeToggle() {
