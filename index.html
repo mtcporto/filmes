@@ -73,6 +73,21 @@
             
             <!-- Seletor de Provedores - aparece apenas quando "Disponível Agora" está selecionado -->
             <div id="providerSelector" class="mt-4 hidden">
+                <h3 class="text-sm font-semibold mb-2 text-gray-700 dark:text-gray-300">Tipo de Conteúdo:</h3>
+                <div class="flex flex-wrap gap-2 mb-3">
+                    <button class="streaming-type-btn active" data-streaming-type="all">
+                        <span>Todos</span>
+                    </button>
+                    <button class="streaming-type-btn" data-streaming-type="movie">
+                        <i class="fas fa-film mr-1"></i>
+                        <span>Filmes</span>
+                    </button>
+                    <button class="streaming-type-btn" data-streaming-type="tv">
+                        <i class="fas fa-tv mr-1"></i>
+                        <span>Séries</span>
+                    </button>
+                </div>
+                
                 <h3 class="text-sm font-semibold mb-2 text-gray-700 dark:text-gray-300">Selecionar Provedor:</h3>
                 <div class="flex flex-wrap gap-2">
                     <button class="provider-btn active" data-provider="all">

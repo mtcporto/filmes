@@ -73,22 +73,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Configure botões de tipo de streaming
-    const streamingTypeButtons = document.querySelectorAll('.streaming-type-btn');
-    streamingTypeButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            // Remove active de todos os botões
-            streamingTypeButtons.forEach(btn => btn.classList.remove('active'));
-            // Adiciona active ao botão clicado
-            this.classList.add('active');
-            
-            // Se estamos no modo streaming, refaça a busca
-            if (currentContentType === 'streaming') {
-                fetchTrending(currentContentType);
-            }
-        });
-    });
-    
     // Configure o dark mode
     const darkModeToggle = document.getElementById("darkModeToggle");
     if (darkModeToggle) {
@@ -272,16 +256,7 @@ function createMovieOrShowCard(item, itemType) {
     yearText.textContent = releaseDate ? releaseDate.substring(0, 4) : 'N/A';
     
     const typeText = document.createElement("span");
-    const isMovie = itemType === "movie";
-    typeText.classList.add("content-type-label");
-    typeText.textContent = isMovie ? "Filme" : "Série";
-    
-    // Aplicar cores diretamente via style para garantir que funcionem
-    if (isMovie) {
-        typeText.style.background = "linear-gradient(135deg, #8b5cf6, #7c3aed)";
-    } else {
-        typeText.style.background = "linear-gradient(135deg, #f59e0b, #d97706)";
-    }
+    typeText.textContent = itemType === "movie" ? "Filme" : "Série";
     
     detailsContainer.appendChild(yearText);
     detailsContainer.appendChild(typeText);
@@ -683,69 +658,32 @@ function getSelectedProvider() {
     return activeBtn ? activeBtn.dataset.provider : 'all';
 }
 
-function getSelectedStreamingType() {
-    const activeBtn = document.querySelector('.streaming-type-btn.active');
-    return activeBtn ? activeBtn.dataset.streamingType : 'all';
-}
-
 function fetchStreamingContent() {
     const selectedProvider = getSelectedProvider();
-    const selectedStreamingType = getSelectedStreamingType();
     
-    // Determinar quais tipos buscar baseado na seleção
-    let promises = [];
-    
-    // Buscar múltiplas páginas para ter muito mais conteúdo para verificar
-    const pages = [1, 2, 3, 4, 5]; // 5 páginas = ~100 itens por tipo
-    
-    if (selectedStreamingType === 'all' || selectedStreamingType === 'movie') {
-        pages.forEach(page => {
-            promises.push(
-                axios.get(`${TMDB_API_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&language=pt-BR&sort_by=popularity.desc&page=${page}`)
-                    .then(response => ({
-                        type: 'movie',
-                        results: response.data.results || []
-                    }))
-            );
-        });
-    }
-    
-    if (selectedStreamingType === 'all' || selectedStreamingType === 'tv') {
-        pages.forEach(page => {
-            promises.push(
-                axios.get(`${TMDB_API_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&language=pt-BR&sort_by=popularity.desc&page=${page}`)
-                    .then(response => ({
-                        type: 'tv',
-                        results: response.data.results || []
-                    }))
-            );
-        });
-    }
+    // Buscar filmes e séries populares sem filtro inicial por provedor
+    // Vamos fazer a verificação real de disponibilidade depois
+    const promises = [
+        axios.get(`${TMDB_API_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&language=pt-BR&sort_by=popularity.desc`),
+        axios.get(`${TMDB_API_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&language=pt-BR&sort_by=popularity.desc`)
+    ];
     
     Promise.all(promises)
         .then(responses => {
-            let combinedResults = [];
+            const movieResults = responses[0].data.results || [];
+            const tvResults = responses[1].data.results || [];
             
-            responses.forEach(response => {
-                const resultsWithType = response.results.map(item => ({
-                    ...item, 
-                    media_type: response.type
-                }));
-                combinedResults = [...combinedResults, ...resultsWithType];
-            });
-            
-            // Embaralhar para melhor variedade
-            combinedResults = combinedResults.sort(() => Math.random() - 0.5);
-            
-            console.log(`Iniciando verificação de ${combinedResults.length} itens para disponibilidade em streaming`);
+            // Combinar resultados de filmes e séries
+            const combinedResults = [
+                ...movieResults.map(item => ({...item, media_type: 'movie'})),
+                ...tvResults.map(item => ({...item, media_type: 'tv'}))
+            ];
             
             if (combinedResults.length > 0) {
                 // SEMPRE fazer verificação adicional para garantir disponibilidade real
                 filterByProviderAvailability(combinedResults, selectedProvider);
             } else {
-                const typeLabel = selectedStreamingType === 'movie' ? 'filmes' : 
-                                 selectedStreamingType === 'tv' ? 'séries' : 'conteúdo';
-                moviesContainer.innerHTML = `<div class="text-center p-8">Nenhum ${typeLabel} encontrado para este provedor no Brasil.</div>`;
+                moviesContainer.innerHTML = '<div class="text-center p-8">Nenhum conteúdo encontrado para este provedor no Brasil.</div>';
             }
         })
         .catch(error => {
@@ -755,104 +693,67 @@ function fetchStreamingContent() {
 }
 
 function filterByProviderAvailability(results, providerId) {
-    // Aumentar drasticamente o número de itens para ter muito mais conteúdo
-    let verifiedItems = [];
-    let currentIndex = 0;
-    const targetItems = providerId === 'all' ? 150 : 25; // Meta: 150 para todos, 25 para provedor específico
-    const maxTotalChecks = 400; // Verificar até 400 itens para garantir abundância
+    // Verificação rigorosa de disponibilidade real no Brasil
+    const batchSize = 25; // Aumentar um pouco para mais resultados
+    const firstBatch = results.slice(0, batchSize);
     
-    function checkBatch(startIndex, batchSize = 40) {
-        const batch = results.slice(startIndex, startIndex + batchSize);
-        if (batch.length === 0) {
-            // Acabaram os resultados, renderizar o que temos
-            renderFinalResults();
-            return;
-        }
-        
-        // Atualizar indicador de progresso
-        const progressMessage = `Verificando disponibilidade... (${verifiedItems.length} encontrados, meta: ${targetItems})`;
-        moviesContainer.innerHTML = `<div class="flex justify-center items-center h-64 w-full">
-            <div class="text-center">
-                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                <p class="text-gray-600 dark:text-gray-400">${progressMessage}</p>
-            </div>
-        </div>`;
-        
-        const providerChecks = batch.map(item => {
-            const type = item.media_type === 'movie' ? 'movie' : 'tv';
-            return axios.get(`${TMDB_API_BASE_URL}/${type}/${item.id}/watch/providers?api_key=${TMDB_API_KEY}`)
-                .then(response => {
-                    const brazilProviders = response.data.results?.BR;
-                    
-                    if (!brazilProviders) {
-                        return null; // Não disponível no Brasil
-                    }
-                    
-                    // Verificar se há QUALQUER forma de assistir (streaming, aluguel, compra)
-                    const hasAnyProvider = 
-                        (brazilProviders.flatrate && brazilProviders.flatrate.length > 0) ||
-                        (brazilProviders.rent && brazilProviders.rent.length > 0) ||
-                        (brazilProviders.buy && brazilProviders.buy.length > 0);
-                    
-                    if (!hasAnyProvider) {
-                        return null; // Não há nenhum provedor disponível
-                    }
-                    
-                    // Se um provedor específico foi selecionado, verificar se está disponível
-                    if (providerId !== 'all') {
-                        const hasSpecificProvider = 
-                            (brazilProviders.flatrate && brazilProviders.flatrate.some(p => p.provider_id == providerId)) ||
-                            (brazilProviders.rent && brazilProviders.rent.some(p => p.provider_id == providerId)) ||
-                            (brazilProviders.buy && brazilProviders.buy.some(p => p.provider_id == providerId));
-                        
-                        return hasSpecificProvider ? item : null;
-                    }
-                    
-                    // Para "todos", retornar se há qualquer provedor
-                    return hasAnyProvider ? item : null;
-                })
-                .catch(error => {
-                    console.log(`Error checking providers for ${item.title || item.name}:`, error);
-                    return null; // Em caso de erro, não incluir
-                });
-        });
-        
-        Promise.all(providerChecks)
-            .then(checkedResults => {
-                const availableInBatch = checkedResults.filter(item => item !== null);
-                verifiedItems = [...verifiedItems, ...availableInBatch];
+    const providerChecks = firstBatch.map(item => {
+        const type = item.media_type === 'movie' ? 'movie' : 'tv';
+        return axios.get(`${TMDB_API_BASE_URL}/${type}/${item.id}/watch/providers?api_key=${TMDB_API_KEY}`)
+            .then(response => {
+                const brazilProviders = response.data.results?.BR;
                 
-                currentIndex += batchSize;
-                
-                // Só parar se atingirmos a meta OU verificarmos o máximo de itens
-                if (verifiedItems.length >= targetItems || currentIndex >= maxTotalChecks) {
-                    renderFinalResults();
-                } else {
-                    // Continuar verificando o próximo lote
-                    checkBatch(currentIndex, batchSize);
+                if (!brazilProviders) {
+                    return null; // Não disponível no Brasil
                 }
+                
+                // Verificar se há QUALQUER forma de assistir (streaming, aluguel, compra)
+                const hasAnyProvider = 
+                    (brazilProviders.flatrate && brazilProviders.flatrate.length > 0) ||
+                    (brazilProviders.rent && brazilProviders.rent.length > 0) ||
+                    (brazilProviders.buy && brazilProviders.buy.length > 0);
+                
+                if (!hasAnyProvider) {
+                    return null; // Não há nenhum provedor disponível
+                }
+                
+                // Se um provedor específico foi selecionado, verificar se está disponível
+                if (providerId !== 'all') {
+                    const hasSpecificProvider = 
+                        (brazilProviders.flatrate && brazilProviders.flatrate.some(p => p.provider_id == providerId)) ||
+                        (brazilProviders.rent && brazilProviders.rent.some(p => p.provider_id == providerId)) ||
+                        (brazilProviders.buy && brazilProviders.buy.some(p => p.provider_id == providerId));
+                    
+                    return hasSpecificProvider ? item : null;
+                }
+                
+                // Para "todos", retornar se há qualquer provedor
+                return hasAnyProvider ? item : null;
             })
             .catch(error => {
-                console.log('Error checking provider availability:', error);
-                renderFinalResults(); // Renderizar o que temos mesmo com erro
+                console.log(`Error checking providers for ${item.title || item.name}:`, error);
+                return null; // Em caso de erro, não incluir
             });
-    }
+    });
     
-    function renderFinalResults() {
-        if (verifiedItems.length === 0) {
-            const providerName = getProviderName(providerId);
-            const message = providerId === 'all' 
-                ? 'Nenhum conteúdo disponível em streaming no Brasil no momento.'
-                : `Nenhum conteúdo disponível no ${providerName} no Brasil no momento.`;
-            moviesContainer.innerHTML = `<div class="text-center p-8">${message}</div>`;
-        } else {
-            console.log(`Encontrados ${verifiedItems.length} itens disponíveis`);
-            renderStreamingResults(verifiedItems);
-        }
-    }
-    
-    // Começar a verificação
-    checkBatch(0);
+    Promise.all(providerChecks)
+        .then(checkedResults => {
+            const availableContent = checkedResults.filter(item => item !== null);
+            
+            if (availableContent.length === 0) {
+                const providerName = getProviderName(providerId);
+                const message = providerId === 'all' 
+                    ? 'Nenhum conteúdo disponível em streaming no Brasil no momento.'
+                    : `Nenhum conteúdo disponível no ${providerName} no Brasil no momento.`;
+                moviesContainer.innerHTML = `<div class="text-center p-8">${message}</div>`;
+            } else {
+                renderStreamingResults(availableContent);
+            }
+        })
+        .catch(error => {
+            console.log('Error checking provider availability:', error);
+            moviesContainer.innerHTML = '<div class="text-center p-8 text-red-500">Erro ao verificar disponibilidade de streaming. Por favor tente novamente.</div>';
+        });
 }
 
 function renderStreamingResults(results) {
@@ -938,16 +839,7 @@ function createStreamingCard(item, itemType) {
     yearText.textContent = releaseDate ? releaseDate.substring(0, 4) : 'N/A';
     
     const typeText = document.createElement("span");
-    const isMovie = itemType === "movie";
-    typeText.classList.add("content-type-label");
-    typeText.textContent = isMovie ? "Filme" : "Série";
-    
-    // Aplicar cores diretamente via style para garantir que funcionem
-    if (isMovie) {
-        typeText.style.background = "linear-gradient(135deg, #8b5cf6, #7c3aed)";
-    } else {
-        typeText.style.background = "linear-gradient(135deg, #f59e0b, #d97706)";
-    }
+    typeText.textContent = itemType === "movie" ? "Filme" : "Série";
     
     detailsContainer.appendChild(yearText);
     detailsContainer.appendChild(typeText);
@@ -1024,57 +916,29 @@ function performStreamingSearch(searchTerm) {
     }
     
     const selectedProvider = getSelectedProvider();
-    const selectedStreamingType = getSelectedStreamingType();
     
-    // Determinar quais tipos buscar baseado na seleção - buscar mais páginas para mais resultados
-    let promises = [];
-    const pages = [1, 2, 3]; // 3 páginas para busca = ~60 resultados por tipo
-    
-    if (selectedStreamingType === 'all' || selectedStreamingType === 'movie') {
-        pages.forEach(page => {
-            promises.push(
-                axios.get(`${TMDB_API_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(searchTerm)}&language=pt-BR&page=${page}`)
-                    .then(response => ({
-                        type: 'movie',
-                        results: response.data.results || []
-                    }))
-            );
-        });
-    }
-    
-    if (selectedStreamingType === 'all' || selectedStreamingType === 'tv') {
-        pages.forEach(page => {
-            promises.push(
-                axios.get(`${TMDB_API_BASE_URL}/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(searchTerm)}&language=pt-BR&page=${page}`)
-                    .then(response => ({
-                        type: 'tv',
-                        results: response.data.results || []
-                    }))
-            );
-        });
-    }
+    // Buscar filmes e séries que contenham o termo
+    const promises = [
+        axios.get(`${TMDB_API_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(searchTerm)}&language=pt-BR`),
+        axios.get(`${TMDB_API_BASE_URL}/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(searchTerm)}&language=pt-BR`)
+    ];
     
     Promise.all(promises)
         .then(responses => {
-            let combinedResults = [];
+            const movieResults = responses[0].data.results || [];
+            const tvResults = responses[1].data.results || [];
             
-            responses.forEach(response => {
-                const resultsWithType = response.results.map(item => ({
-                    ...item, 
-                    media_type: response.type
-                }));
-                combinedResults = [...combinedResults, ...resultsWithType];
-            });
-            
-            console.log(`Busca encontrou ${combinedResults.length} resultados para verificar disponibilidade`);
+            // Combinar resultados de filmes e séries
+            const combinedResults = [
+                ...movieResults.map(item => ({...item, media_type: 'movie'})),
+                ...tvResults.map(item => ({...item, media_type: 'tv'}))
+            ];
             
             if (combinedResults.length > 0) {
                 // Filtrar apenas conteúdo que está disponível em streaming
                 filterStreamingAvailability(combinedResults, selectedProvider, searchTerm);
             } else {
-                const typeLabel = selectedStreamingType === 'movie' ? 'filmes' : 
-                                 selectedStreamingType === 'tv' ? 'séries' : 'resultados';
-                moviesContainer.innerHTML = `<div class="text-center p-8">Nenhum ${typeLabel} encontrado para esta busca.</div>`;
+                moviesContainer.innerHTML = '<div class="text-center p-8">Nenhum resultado encontrado para esta busca.</div>';
             }
         })
         .catch(error => {
@@ -1084,94 +948,58 @@ function performStreamingSearch(searchTerm) {
 }
 
 function filterStreamingAvailability(results, providerId, searchTerm) {
-    // Aumentar o número de itens verificados para busca também
-    let verifiedItems = [];
-    let currentIndex = 0;
-    const targetItems = providerId === 'all' ? 50 : 20; // Meta para busca: 50 para todos, 20 para provedor específico
-    const maxTotalChecks = 100; // Máximo para busca
+    // Verificar disponibilidade de streaming para os primeiros 15 resultados
+    const batchSize = 15;
+    const batch = results.slice(0, batchSize);
     
-    function checkBatch(startIndex, batchSize = 25) {
-        const batch = results.slice(startIndex, startIndex + batchSize);
-        if (batch.length === 0) {
-            renderSearchResults();
-            return;
-        }
-        
-        // Atualizar indicador de progresso para busca
-        const progressMessage = `Verificando disponibilidade da busca... (${verifiedItems.length} encontrados, meta: ${targetItems})`;
-        moviesContainer.innerHTML = `<div class="flex justify-center items-center h-64 w-full">
-            <div class="text-center">
-                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                <p class="text-gray-600 dark:text-gray-400">${progressMessage}</p>
-            </div>
-        </div>`;
-        
-        const availabilityChecks = batch.map(item => {
-            const type = item.media_type === 'movie' ? 'movie' : 'tv';
-            return axios.get(`${TMDB_API_BASE_URL}/${type}/${item.id}/watch/providers?api_key=${TMDB_API_KEY}`)
-                .then(response => {
-                    const brazilProviders = response.data.results?.BR;
-                    if (brazilProviders) {
-                        // Verificar se há algum provedor disponível
-                        const hasAnyProvider = 
-                            (brazilProviders.flatrate && brazilProviders.flatrate.length > 0) ||
-                            (brazilProviders.rent && brazilProviders.rent.length > 0) ||
-                            (brazilProviders.buy && brazilProviders.buy.length > 0);
-                        
-                        if (hasAnyProvider) {
-                            // Se um provedor específico foi selecionado, verificar se está disponível
-                            if (providerId !== 'all') {
-                                const hasSpecificProvider = 
-                                    (brazilProviders.flatrate && brazilProviders.flatrate.some(p => p.provider_id == providerId)) ||
-                                    (brazilProviders.rent && brazilProviders.rent.some(p => p.provider_id == providerId)) ||
-                                    (brazilProviders.buy && brazilProviders.buy.some(p => p.provider_id == providerId));
-                                
-                                return hasSpecificProvider ? item : null;
-                            }
-                            return item;
+    const availabilityChecks = batch.map(item => {
+        const type = item.media_type === 'movie' ? 'movie' : 'tv';
+        return axios.get(`${TMDB_API_BASE_URL}/${type}/${item.id}/watch/providers?api_key=${TMDB_API_KEY}`)
+            .then(response => {
+                const brazilProviders = response.data.results?.BR;
+                if (brazilProviders) {
+                    // Verificar se há algum provedor disponível
+                    const hasAnyProvider = 
+                        (brazilProviders.flatrate && brazilProviders.flatrate.length > 0) ||
+                        (brazilProviders.rent && brazilProviders.rent.length > 0) ||
+                        (brazilProviders.buy && brazilProviders.buy.length > 0);
+                    
+                    if (hasAnyProvider) {
+                        // Se um provedor específico foi selecionado, verificar se está disponível
+                        if (providerId !== 'all') {
+                            const hasSpecificProvider = 
+                                (brazilProviders.flatrate && brazilProviders.flatrate.some(p => p.provider_id == providerId)) ||
+                                (brazilProviders.rent && brazilProviders.rent.some(p => p.provider_id == providerId)) ||
+                                (brazilProviders.buy && brazilProviders.buy.some(p => p.provider_id == providerId));
+                            
+                            return hasSpecificProvider ? item : null;
                         }
+                        return item;
                     }
-                    return null;
-                })
-                .catch(() => null);
-        });
-        
-        Promise.all(availabilityChecks)
-            .then(checkedResults => {
-                const availableInBatch = checkedResults.filter(item => item !== null);
-                verifiedItems = [...verifiedItems, ...availableInBatch];
-                
-                currentIndex += batchSize;
-                
-                // Só parar se atingirmos a meta OU verificarmos o máximo de itens
-                if (verifiedItems.length >= targetItems || currentIndex >= maxTotalChecks) {
-                    renderSearchResults();
-                } else {
-                    // Continuar verificando o próximo lote
-                    checkBatch(currentIndex, batchSize);
                 }
+                return null;
             })
-            .catch(error => {
-                console.log('Error checking streaming availability:', error);
-                renderSearchResults();
-            });
-    }
+            .catch(() => null);
+    });
     
-    function renderSearchResults() {
-        if (verifiedItems.length > 0) {
-            console.log(`Busca encontrou ${verifiedItems.length} itens disponíveis`);
-            renderStreamingResults(verifiedItems);
-        } else {
-            const providerName = getProviderName(providerId);
-            const message = providerId === 'all' 
-                ? `Nenhum resultado para "${searchTerm}" foi encontrado em serviços de streaming no Brasil.`
-                : `Nenhum resultado para "${searchTerm}" foi encontrado no ${providerName}.`;
-            moviesContainer.innerHTML = `<div class="text-center p-8">${message}</div>`;
-        }
-    }
-    
-    // Começar a verificação
-    checkBatch(0);
+    Promise.all(availabilityChecks)
+        .then(checkedResults => {
+            const availableContent = checkedResults.filter(item => item !== null);
+            
+            if (availableContent.length > 0) {
+                renderStreamingResults(availableContent);
+            } else {
+                const providerName = getProviderName(providerId);
+                const message = providerId === 'all' 
+                    ? `Nenhum resultado para "${searchTerm}" foi encontrado em serviços de streaming no Brasil.`
+                    : `Nenhum resultado para "${searchTerm}" foi encontrado no ${providerName}.`;
+                moviesContainer.innerHTML = `<div class="text-center p-8">${message}</div>`;
+            }
+        })
+        .catch(error => {
+            console.log('Error checking streaming availability:', error);
+            moviesContainer.innerHTML = '<div class="text-center p-8 text-red-500">Erro ao verificar disponibilidade de streaming.</div>';
+        });
 }
 
 function getProviderName(providerId) {

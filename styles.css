@@ -173,6 +173,21 @@ header .dark-mode-container {
     font-size: 0.9rem;
 }
 
+.card-details span:last-child.content-type-label {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: white;
+    margin-left: 8px;
+}
+
+/* Variações de cor para filme/série */
+.card-details span.content-type-label:contains("Filme") {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.card-details span.content-type-label:contains("Série") {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
 .card-synopsis-container {
     position: absolute;
     top: 0;
@@ -299,6 +314,7 @@ background-color:black;color:white}
 .year-slider {
   width: 100%;
   -webkit-appearance: none;
+  appearance: none;
   height: 6px;
   border-radius: 3px;
   background: #cbd5e0;
@@ -758,4 +774,90 @@ header .absolute.inset-0:nth-child(2) {
 
 .streaming-badge {
     animation: streaming-pulse 2s infinite;
+}
+
+/* Botões de filtro de tipo de streaming */
+.streaming-type-btn {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    background-color: #f9fafb;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.streaming-type-btn:hover {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.dark .streaming-type-btn {
+    background-color: #4b5563;
+    color: #d1d5db;
+    border-color: #6b7280;
+}
+
+.dark .streaming-type-btn:hover {
+    background-color: #374151;
+}
+
+.streaming-type-btn.active {
+    background-color: #3182ce;
+    color: white;
+    border-color: #2563eb;
+}
+
+.streaming-type-btn.active:hover {
+    background-color: #2563eb;
+}
+
+/* Badge para tipo de conteúdo (filme/série) */
+.content-type-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    z-index: 5;
+}
+
+.content-type-badge.movie {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.content-type-badge.tv {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+/* Destaque para o label de tipo de conteúdo na parte inferior */
+.content-type-label {
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: 8px;
+    color: white !important;
+    background: #3b82f6; /* Cor padrão azul como fallback */
+}
+
+/* Variações de cor para filme/série com !important para sobrepor Tailwind */
+.card-details .content-type-label.movie-label {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+}
+
+.card-details .content-type-label.tv-label {
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
 }
